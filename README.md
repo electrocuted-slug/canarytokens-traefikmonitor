@@ -5,12 +5,9 @@
 
 # Install Guide
 
-Fill in all the *.env files with your system specific information.
-
 Pre Ubuntu 20.04
  ```shell
 sudo apt-get install python-pip python-dev libyaml-dev
-sudo pip install -U docker-compose
 ```
 
 Ubuntu 20.04 Onward
@@ -18,7 +15,28 @@ Ubuntu 20.04 Onward
 sudo apt install python2 python-dev libyaml-dev
 curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
 sudo python2 get-pip.py
+```
+
+Both 
+```shell
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
 sudo pip install -U docker-compose
+git clone https://github.com/electrocuted-slug/canarytokens-traefikmonitor
+cd canarytokens-traefikmonitor
+```
+
+Fill in all the *.env files with your system specific information.
+```shell
+docker build
+```
+Run view output for the first time
+```shell
+docker compose up
+```
+Once you verified your system works
+```shell
+docker compose up -d
 ```
 
 DNS (Basic Example)
