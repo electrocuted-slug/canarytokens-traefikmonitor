@@ -14,7 +14,6 @@ services:
       - "--certificatesresolvers.mytlschallenge.acme.email=${EMAIL}"
       - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
       - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge.resolvers=${DNS_RESOLVER1}:53,${DNS_RESOLVER2}:53"
       #- "--certificatesresolvers.mytlschallenge.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--accesslog=true"
       - "--accesslog.filepath=/mylog/access.log"
