@@ -1,0 +1,149 @@
+version: '3.7'
+
+services:
+  traefik:
+    restart: unless-stopped
+    image: traefik
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.exposedbydefault=false"
+      - "--certificatesresolvers.myhttpchallenge.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/mylog/access.log"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
+    networks:
+      - traefik
+      - inbound
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./mylog:/mylog
+      - letsencrypt:/letsencrypt/
+    ports:
+      - "${PUBLIC_IP}:80:80"
+      - "${PUBLIC_IP}:443:443"
+      - "127.0.0.1:8080:8080"
+    labels:
+      # global redirect to https
+      - 'traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)'
+      - 'traefik.http.routers.http-catchall.entrypoints=web'
+      - 'traefik.http.routers.http-catchall.middlewares=redirect-to-https'
+      - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=websecure'
+  prometheus:
+    restart: unless-stopped
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - inbound
+    ports:
+      - "127.0.0.1:9090:9090"
+    labels:
+     - "traefik.http.routers.prometheus.rule=Host(`prometheus.${PUBLIC_IP}`)"
+     - "traefik.http.routers.prometheus.service=prometheus"
+     - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+     - "traefik.docker.network=inbound"
+  
+  grafana:
+    restart: unless-stopped
+    image: grafana/grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    env_file:
+      - ./grafana/config.monitoring
+    networks:
+      - inbound
+    user: "104"
+    labels:
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${PUBLIC_IP}`)"
+      - "traefik.http.routers.grafana.service=grafana"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.docker.network=inbound"
+  redis:
+    restart: unless-stopped
+    image: redis
+    networks:
+     - inbound
+    volumes:
+     - ./data:/data/
+    container_name: redis
+    command: redis-server --appendonly yes --protected-mode no --save 60 1
+  frontend:
+    restart: unless-stopped
+    build: ./canarytokens/
+    image: thinkst/canarytokens
+    networks:
+     - inbound
+    links:
+     - redis
+    env_file:
+     - frontend.env
+    volumes:
+     - ./uploads:/uploads/
+     - log-volume:/logs
+    container_name: frontend
+    command: bash -c "rm frontend.pid; twistd -noy frontend.tac --pidfile=frontend.pid"
+  switchboard:
+    build: ./canarytokens/
+    restart: unless-stopped
+    image: thinkst/canarytokens
+    networks:
+     - inbound
+    ports:
+     - "${PUBLIC_IP}:53:53"
+     - "${PUBLIC_IP}:53:53/udp"
+     - "${PUBLIC_IP}:25:25"
+    links:
+     - redis
+    env_file:
+     - switchboard.env
+    volumes:
+     - frontend
+    container_name: switchboard
+    command: bash -c "rm switchboard.pid; twistd -noy switchboard.tac --pidfile=switchboard.pid"
+  nginx:
+    restart: unless-stopped
+    image: thinkst/canarytokens_nginx
+    build: ./nginx/
+    networks:
+     - inbound
+    links:
+     - frontend
+     - switchboard
+    container_name: nginx
+    command: /usr/sbin/nginx -c /etc/nginx/nginx.conf -g "daemon off;"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`${DOMAIN1}`,`${DOMAIN2}`)"
+      - "traefik.http.routers.nginx.entrypoints=websecure"
+      - "traefik.http.routers.nginx.tls.certresolver=myresolver"
+      - "traefik.docker.network=inbound"
+
+networks:
+  traefik:
+    name: ${DEFAULT_NETWORK}
+  inbound:
+    name: ${DEFAULT_INTERNAL_NETWORK}
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+    log-volume: {}
+    frontend: {}
+    letsencrypt: {}
