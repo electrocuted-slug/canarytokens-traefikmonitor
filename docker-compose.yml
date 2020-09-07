@@ -31,11 +31,8 @@ services:
       - "${PUBLIC_IP}:443:443"
       - "127.0.0.1:8080:8080"
     labels:
-      # global redirect to https
-      - 'traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)'
-      - 'traefik.http.routers.http-catchall.entrypoints=web'
-      - 'traefik.http.routers.http-catchall.middlewares=redirect-to-https'
-      - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=websecure'
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.permanent=true"
   prometheus:
     restart: unless-stopped
     image: prom/prometheus
@@ -134,6 +131,8 @@ services:
       - "traefik.http.routers.nginx.entrypoints=websecure"
       - "traefik.http.routers.nginx.tls.certresolver=myresolver"
       - "traefik.docker.network=inbound"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.permanent=true"
 
 networks:
   traefik:
