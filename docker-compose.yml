@@ -14,6 +14,7 @@ services:
       - "--certificatesresolvers.mytlschallenge.acme.email=${EMAIL}"
       - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
       - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge.resolvers=${DNS_RESOLVER1}:53,${DNS_RESOLVER2}:53"
       #- "--certificatesresolvers.mytlschallenge.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--accesslog=true"
       - "--accesslog.filepath=/mylog/access.log"
@@ -30,9 +31,6 @@ services:
       - "${PUBLIC_IP}:80:80"
       - "${PUBLIC_IP}:443:443"
       - "127.0.0.1:8080:8080"
-    labels:
-      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.permanent=true"
   prometheus:
     restart: unless-stopped
     image: prom/prometheus
@@ -131,8 +129,6 @@ services:
       - "traefik.http.routers.nginx.entrypoints=websecure"
       - "traefik.http.routers.nginx.tls.certresolver=mytlschallenge"
       - "traefik.docker.network=inbound"
-      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.permanent=true"
 
 networks:
   traefik:
