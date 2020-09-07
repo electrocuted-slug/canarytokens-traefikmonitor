@@ -51,6 +51,9 @@ DNS (Keep Base Domain Example)
  * app.test.com. NS test.com
  * ns.test.com. NS test.com
  * nx.test.com NS test.com
+ 
+Protect Your Site With Basic Auth
+ * [Go To The Bottom of the README.md](#enabling-basic-auth-to-your-canarytokens-site)
 
 # Monitor Traefik with Prometheus
 
