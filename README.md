@@ -40,15 +40,17 @@ docker compose up -d
 ```
 
 DNS (Basic Example)
-test.com A 1.2.3.4
-ns.test.com. NS test.com
-pdf.test.com NS test.com
+
+ * test.com A 1.2.3.4
+ * ns.test.com. NS test.com
+ * pdf.test.com NS test.com
 
 DNS (Keep Base Domain Example)
-app.test.com A 1.2.3.4
-app.test.com. NS test.com
-ns.test.com. NS test.com
-nx.test.com NS test.com
+
+ * app.test.com A 1.2.3.4
+ * app.test.com. NS test.com
+ * ns.test.com. NS test.com
+ * nx.test.com NS test.com
 
 # Monitor Traefik with Prometheus
 
